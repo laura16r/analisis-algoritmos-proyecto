@@ -1,23 +1,15 @@
-import json
+"""
+processors/market_processor.py
+================================
+Une todos los JSON de data/raw/ en un unico dataset maestro
+ordenado por fecha y guardado en data/processed/.
+"""
+
 import os
 from typing import Any
 
-
-RAW_DIR             = "data/raw"
-PROCESSED_DIR       = "data/processed"
-MASTER_DATASET_PATH = "data/processed/master_dataset.json"
-
-
-def load_json_file(path: str) -> list[dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-def save_json_file(path: str, data: list[dict[str, Any]]) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4, ensure_ascii=False)
+from config import RAW_DIR, MASTER_DATASET_PATH
+from src.utils.io import load_json, save_json
 
 
 def build_master_dataset() -> list[dict[str, Any]]:
@@ -39,14 +31,14 @@ def build_master_dataset() -> list[dict[str, Any]]:
     print(f"  Archivos encontrados: {len(files)}\n")
 
     master_dataset: list[dict[str, Any]] = []
-    summary: list[dict[str, Any]] = []
+    summary:        list[dict[str, Any]] = []
 
     for file_name in files:
         ticker = file_name.replace(".json", "").replace("_", ".")
         path   = os.path.join(RAW_DIR, file_name)
 
         try:
-            rows = load_json_file(path)
+            rows = load_json(path)
         except Exception as e:
             print(f"  [ERROR] {ticker}: no se pudo leer el archivo — {e}")
             continue
@@ -59,7 +51,6 @@ def build_master_dataset() -> list[dict[str, Any]]:
         summary.append({"ticker": ticker, "registros": len(rows)})
         print(f"  {ticker}: {len(rows)} registros cargados")
 
-    # Ordenar: fecha ascendente, close como desempate
     master_dataset.sort(
         key=lambda r: (
             r["date"],
@@ -67,7 +58,7 @@ def build_master_dataset() -> list[dict[str, Any]]:
         )
     )
 
-    save_json_file(MASTER_DATASET_PATH, master_dataset)
+    save_json(MASTER_DATASET_PATH, master_dataset)
 
     print(f"\n  [OK] Dataset maestro: {MASTER_DATASET_PATH}")
     print(f"  [OK] Total registros : {len(master_dataset)}")
