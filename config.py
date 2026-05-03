@@ -16,10 +16,11 @@ PROCESSED_DIR   = "data/processed"
 RESULTS_DIR     = "data/results"
 
 # ── Archivos del pipeline ─────────────────────────────────────
-MASTER_DATASET_PATH = os.path.join(PROCESSED_DIR, "master_dataset.json")
-CLEAN_DATASET_PATH  = os.path.join(RESULTS_DIR,   "clean_dataset.json")
-VALIDATION_LOG_PATH = os.path.join(RESULTS_DIR,   "validation_report.json")
-DAILY_RETURNS_PATH  = os.path.join(RESULTS_DIR,   "daily_returns_dataset.json")
+MASTER_DATASET_PATH         = os.path.join(PROCESSED_DIR, "master_dataset.json")
+CLEAN_DATASET_PATH          = os.path.join(RESULTS_DIR,   "clean_dataset.json")
+VALIDATION_LOG_PATH         = os.path.join(RESULTS_DIR,   "validation_report.json")
+DAILY_RETURNS_PATH          = os.path.join(RESULTS_DIR,   "daily_returns_dataset.json")
+HISTORICAL_VOLATILITY_PATH  = os.path.join(RESULTS_DIR,   "historical_volatility.json")
 
 # ── Parametros de descarga ────────────────────────────────────
 INTERVAL = "1d"
@@ -54,3 +55,6 @@ ASSETS = [
 # ── Validacion: minimo de registros esperados por activo ──────
 # 5 años * ~252 dias bursatiles por año = ~1260 registros minimos
 MIN_RECORDS_PER_ASSET = 1_000
+
+# Estandar financiero para días de trading #
+TRADING_DAYS = 252
