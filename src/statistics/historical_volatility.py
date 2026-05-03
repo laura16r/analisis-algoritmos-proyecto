@@ -3,7 +3,7 @@ from src.statistics.descriptive_stats import (
     calculate_standard_deviation,
 )
 from src.utils.io import FileUtils
-from config import TRADING_DAYS, HISTORICAL_VOLATILITY_PATH
+from config import TRADING_DAYS
 
 def calculate_historical_volatility_by_ticker(
     dataset: list[dict[str, Any]],
@@ -77,7 +77,5 @@ def calculate_historical_volatility_by_ticker(
         ),
         reverse=True
     )
-
-    FileUtils.save_json(HISTORICAL_VOLATILITY_PATH, results)
 
     return results

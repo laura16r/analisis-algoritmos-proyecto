@@ -1,9 +1,6 @@
 from datetime import datetime
 from typing import Any
 
-from config import CLEAN_DATASET_PATH, DAILY_RETURNS_PATH
-from src.utils.io import FileUtils 
-
 def calculate_daily_returns(
     dataset: list[dict[str, Any]],
     price_field: str = "close",
@@ -68,7 +65,5 @@ def calculate_daily_returns(
             row["ticker"],
         )
     )
-
-    FileUtils.save_json(DAILY_RETURNS_PATH, dataset_with_returns)
 
     return dataset_with_returns
