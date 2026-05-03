@@ -1,43 +1,23 @@
+"""
+extractors/yahoo_extractor.py
+==============================
+Descarga datos historicos OHLCV + adjclose desde Yahoo Finance
+mediante peticiones HTTP directas (sin librerias de alto nivel).
+
+Cada ticker se guarda como un archivo JSON independiente en data/raw/.
+"""
+
 import datetime
 import json
-import os
 import time
 from typing import Any
 
 import requests
 
+from config import ASSETS, INTERVAL, RANGE, RAW_DIR
+from src.utils.io import FileUtils
 
-RAW_DIR = "data/raw"
 
-ASSETS = [
-    # Acciones colombianas (BVC via Yahoo Finance)
-    "EC",
-    "CIB",
-    "GGAL",
-    "GEB.CL",
-    "ISA.CL",
-    "CELSIA.CL",
-    "NUTRESA.CL",
-    "EXITO.CL",
-    "CEMARGOS.CL",
-    "CNEC.CL",
-    # ETFs y acciones globales
-    "VOO",
-    "SPY",
-    "QQQ",
-    "IVV",
-    "VTI",
-    "EEM",
-    "GLD",
-    "AAPL",
-    "MSFT",
-    "AMZN",
-]
-
-INTERVAL = "1d"
-RANGE = "5y"
-
-# User-Agent completo para evitar bloqueos de Yahoo Finance
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -53,6 +33,11 @@ def build_url(ticker: str) -> str:
 
 
 def download_json(url: str, ticker: str) -> dict[str, Any] | None:
+    """
+    Realiza la peticion HTTP a Yahoo Finance.
+    Distingue cada tipo de error con un mensaje especifico para
+    facilitar el diagnostico durante la ejecucion.
+    """
     try:
         response = requests.get(url, headers=HEADERS, timeout=15)
 
@@ -76,6 +61,14 @@ def download_json(url: str, ticker: str) -> dict[str, Any] | None:
 
 
 def parse_yahoo_response(data: dict[str, Any], ticker: str) -> list[dict[str, Any]]:
+    """
+    Extrae OHLCV + adjclose del JSON de Yahoo Finance.
+
+    adjclose (precio ajustado de cierre) se incluye porque corrige
+    automaticamente splits de acciones y distribucion de dividendos.
+    Es el campo recomendado para comparaciones de largo plazo y para
+    calcular retornos reales entre periodos.
+    """
     try:
         result = data["chart"]["result"]
 
@@ -83,9 +76,15 @@ def parse_yahoo_response(data: dict[str, Any], ticker: str) -> list[dict[str, An
             print(f"  [AVISO] {ticker}: Yahoo no devolvio datos.")
             return []
 
-        block = result[0]
-        timestamps: list[int] = block["timestamp"]
-        quote: dict[str, list] = block["indicators"]["quote"][0]
+        block      = result[0]
+        timestamps = block["timestamp"]
+        quote      = block["indicators"]["quote"][0]
+
+        adjclose_list = (
+            block["indicators"]
+            .get("adjclose", [{}])[0]
+            .get("adjclose", [])
+        )
 
         opens   = quote.get("open",   [])
         highs   = quote.get("high",   [])
@@ -99,13 +98,14 @@ def parse_yahoo_response(data: dict[str, Any], ticker: str) -> list[dict[str, An
             date = datetime.datetime.utcfromtimestamp(timestamp).strftime("%Y-%m-%d")
 
             rows.append({
-                "ticker": ticker,
-                "date":   date,
-                "open":   opens[index]   if index < len(opens)   and opens[index]   is not None else None,
-                "high":   highs[index]   if index < len(highs)   and highs[index]   is not None else None,
-                "low":    lows[index]    if index < len(lows)    and lows[index]    is not None else None,
-                "close":  closes[index]  if index < len(closes)  and closes[index]  is not None else None,
-                "volume": volumes[index] if index < len(volumes) and volumes[index] is not None else None,
+                "ticker":   ticker,
+                "date":     date,
+                "open":     opens[index]         if index < len(opens)         and opens[index]         is not None else None,
+                "high":     highs[index]         if index < len(highs)         and highs[index]         is not None else None,
+                "low":      lows[index]          if index < len(lows)          and lows[index]          is not None else None,
+                "close":    closes[index]        if index < len(closes)        and closes[index]        is not None else None,
+                "adjclose": adjclose_list[index] if index < len(adjclose_list) and adjclose_list[index] is not None else None,
+                "volume":   volumes[index]       if index < len(volumes)       and volumes[index]       is not None else None,
             })
 
         return rows
@@ -116,13 +116,13 @@ def parse_yahoo_response(data: dict[str, Any], ticker: str) -> list[dict[str, An
 
 
 def save_raw_json(ticker: str, rows: list[dict[str, Any]]) -> None:
-    os.makedirs(RAW_DIR, exist_ok=True)
-
     file_name = ticker.replace(".", "_")
-    path = os.path.join(RAW_DIR, f"{file_name}.json")
-
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(rows, file, indent=4, ensure_ascii=False)
+    path      = f"{RAW_DIR}/{file_name}.json"
+    
+    FileUtils.save_json(
+        data=rows,
+        file_path=path
+    )
 
     print(f"  [OK] {ticker}: {len(rows)} registros guardados en {path}")
 
@@ -136,13 +136,13 @@ def run_extraction() -> None:
     print(f"  Destino  : {RAW_DIR}/")
     print("=" * 55)
 
-    ok: int = 0
+    ok:     int       = 0
     failed: list[str] = []
 
     for ticker in ASSETS:
         print(f"\nDescargando: {ticker}")
 
-        url = build_url(ticker)
+        url  = build_url(ticker)
         data = download_json(url, ticker)
 
         if data is None:

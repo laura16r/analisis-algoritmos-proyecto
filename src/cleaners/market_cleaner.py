@@ -1,41 +1,37 @@
-import json
-import os
+"""
+cleaners/market_cleaner.py
+===========================
+Limpia el dataset maestro ticker por ticker:
+  1. Convierte tipos y descarta filas sin close.
+  2. Elimina anomalias (precios <= 0).
+  3. Interpola linealmente open, high, low y adjclose faltantes.
+  4. Imputa volumen faltante con el promedio historico del ticker.
+"""
+
 from typing import Any
 
-
-MASTER_DATASET_PATH = "data/processed/master_dataset.json"
-CLEAN_DATASET_PATH  = "data/results/clean_master_dataset.json"
-
-
-def load_json_file(path: str) -> list[dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-def save_json_file(path: str, data: list[dict[str, Any]]) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-
-    with open(path, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4, ensure_ascii=False)
+from config import MASTER_DATASET_PATH, CLEAN_DATASET_PATH
+from src.utils.io import FileUtils
 
 
 def convert_types(row: dict[str, Any]) -> dict[str, Any] | None:
     """
-    Convierte strings a float/int y descarta filas sin fecha o sin close.
-    close es el campo critico: sin el no hay serie de tiempo valida.
+    Convierte strings a float/int.
+    Descarta la fila si falta fecha o close (campos criticos).
     """
     if not row.get("date") or row.get("close") is None:
         return None
 
     try:
         return {
-            "ticker": str(row["ticker"]),
-            "date":   str(row["date"]),
-            "open":   float(row["open"])        if row["open"]   is not None else None,
-            "high":   float(row["high"])        if row["high"]   is not None else None,
-            "low":    float(row["low"])         if row["low"]    is not None else None,
-            "close":  float(row["close"]),
-            "volume": int(row["volume"])        if row["volume"] is not None else None,
+            "ticker":   str(row["ticker"]),
+            "date":     str(row["date"]),
+            "open":     float(row["open"])     if row["open"]     is not None else None,
+            "high":     float(row["high"])     if row["high"]     is not None else None,
+            "low":      float(row["low"])      if row["low"]      is not None else None,
+            "close":    float(row["close"]),
+            "adjclose": float(row["adjclose"]) if row.get("adjclose") is not None else None,
+            "volume":   int(row["volume"])     if row["volume"]   is not None else None,
         }
     except (ValueError, TypeError):
         return None
@@ -43,18 +39,19 @@ def convert_types(row: dict[str, Any]) -> dict[str, Any] | None:
 
 def remove_anomalies(rows: list[dict[str, Any]], ticker: str) -> list[dict[str, Any]]:
     """
-    Elimina filas con precios negativos o cero.
-    Un precio <= 0 es fisicamente imposible en mercados reales.
+    Elimina filas con cualquier precio <= 0.
+    Un precio negativo o cero es fisicamente imposible en mercados reales.
     """
-    clean: list[dict[str, Any]] = []
-    removed = 0
+    clean:   list[dict[str, Any]] = []
+    removed: int = 0
 
     for row in rows:
         invalid = (
             row["close"] <= 0
-            or (row["open"] is not None and row["open"] <= 0)
-            or (row["high"] is not None and row["high"] <= 0)
-            or (row["low"]  is not None and row["low"]  <= 0)
+            or (row["open"]     is not None and row["open"]     <= 0)
+            or (row["high"]     is not None and row["high"]     <= 0)
+            or (row["low"]      is not None and row["low"]      <= 0)
+            or (row["adjclose"] is not None and row["adjclose"] <= 0)
         )
         if invalid:
             removed += 1
@@ -69,16 +66,18 @@ def remove_anomalies(rows: list[dict[str, Any]], ticker: str) -> list[dict[str, 
 
 def interpolate_missing_prices(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
-    Interpola linealmente open, high y low cuando son None.
-    Se usa interpolacion (no eliminacion) porque estos campos son secundarios:
-    eliminar la fila entera solo por un open faltante romperia innecesariamente
-    la continuidad de la serie temporal. close nunca se interpola — la fila
-    fue descartada en convert_types si close era None.
+    Interpola linealmente open, high, low y adjclose cuando son None.
+
+    Se prefiere interpolacion sobre eliminacion porque estos campos son
+    secundarios: eliminar la fila entera por un open faltante romperia
+    la continuidad de la serie temporal sin justificacion suficiente.
+    close nunca se interpola — la fila se descarta en convert_types si
+    close es None, ya que es el campo principal de la serie.
     """
     rows.sort(key=lambda r: r["date"])
-    price_fields = ["open", "high", "low"]
+    fields_to_interpolate = ["open", "high", "low", "adjclose"]
 
-    for field in price_fields:
+    for field in fields_to_interpolate:
         for index, row in enumerate(rows):
             if row[field] is not None:
                 continue
@@ -86,14 +85,14 @@ def interpolate_missing_prices(rows: list[dict[str, Any]]) -> list[dict[str, Any
             previous_value: float | None = None
             next_value:     float | None = None
 
-            for prev_index in range(index - 1, -1, -1):
-                if rows[prev_index][field] is not None:
-                    previous_value = rows[prev_index][field]
+            for prev in range(index - 1, -1, -1):
+                if rows[prev][field] is not None:
+                    previous_value = rows[prev][field]
                     break
 
-            for next_index in range(index + 1, len(rows)):
-                if rows[next_index][field] is not None:
-                    next_value = rows[next_index][field]
+            for nxt in range(index + 1, len(rows)):
+                if rows[nxt][field] is not None:
+                    next_value = rows[nxt][field]
                     break
 
             if previous_value is not None and next_value is not None:
@@ -109,30 +108,28 @@ def interpolate_missing_prices(rows: list[dict[str, Any]]) -> list[dict[str, Any
 def impute_missing_volume(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     Imputa el volumen faltante con el promedio historico del ticker.
-    El volumen no sigue una tendencia tan predecible como el precio,
-    por lo que el promedio es una estimacion razonable para dias sin dato.
+    El volumen no sigue tendencia predecible, por lo que el promedio
+    es una estimacion razonable para dias sin dato.
     """
-    valid_volumes = [r["volume"] for r in rows if r["volume"] is not None]
+    valid_volumes  = [r["volume"] for r in rows if r["volume"] is not None]
     average_volume = int(sum(valid_volumes) / len(valid_volumes)) if valid_volumes else 0
 
-    imputed = 0
+    imputed: int = 0
     for row in rows:
         if row["volume"] is None:
             row["volume"] = average_volume
             imputed += 1
 
     if imputed > 0:
-        print(f"  [IMPUTACION] {imputed} valores de volumen reemplazados por promedio ({average_volume:,})")
+        print(f"  [IMPUTACION] {imputed} valores de volumen → promedio ({average_volume:,})")
 
     return rows
 
 
 def group_by_ticker(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     grouped: dict[str, list[dict[str, Any]]] = {}
-
     for row in rows:
         grouped.setdefault(row["ticker"], []).append(row)
-
     return grouped
 
 
@@ -142,15 +139,14 @@ def clean_dataset() -> list[dict[str, Any]]:
     print("=" * 55)
 
     try:
-        raw_rows = load_json_file(MASTER_DATASET_PATH)
+        raw_rows = FileUtils.load_json(MASTER_DATASET_PATH)
     except FileNotFoundError:
         print(f"  [ERROR] No se encontro {MASTER_DATASET_PATH}.")
         print("  Ejecuta primero build_master_dataset().")
         return []
 
-    # 1. Conversion de tipos
-    typed: list[dict[str, Any]] = []
-    discarded = 0
+    typed:     list[dict[str, Any]] = []
+    discarded: int = 0
 
     for row in raw_rows:
         converted = convert_types(row)
@@ -162,10 +158,9 @@ def clean_dataset() -> list[dict[str, Any]]:
     if discarded > 0:
         print(f"  [INFO] {discarded} filas descartadas por close o fecha faltante\n")
 
-    # 2. Limpiar cada ticker de forma independiente
-    grouped = group_by_ticker(typed)
+    grouped    = group_by_ticker(typed)
     final_rows: list[dict[str, Any]] = []
-    summary: list[dict[str, Any]] = []
+    summary:    list[dict[str, Any]] = []
 
     for ticker, rows in grouped.items():
         original = len(rows)
@@ -179,10 +174,9 @@ def clean_dataset() -> list[dict[str, Any]]:
         summary.append({"ticker": ticker, "original": original, "final": len(rows)})
         print(f"  [OK] {ticker}: {original} → {len(rows)} registros limpios\n")
 
-    # 3. Ordenar final: fecha asc, close como desempate
     final_rows.sort(key=lambda r: (r["date"], r["close"]))
 
-    save_json_file(CLEAN_DATASET_PATH, final_rows)
+    FileUtils.save_json(CLEAN_DATASET_PATH, final_rows)
 
     print("=" * 55)
     print("  RESUMEN POR ACTIVO")
