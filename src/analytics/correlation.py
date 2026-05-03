@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from src.statistics.descriptive_stats import calculate_mean
+from src.analytics.time_series import aling_series_by_date
 
 def _calculate_pearson_correlation(
     x: list[float],
@@ -40,44 +41,6 @@ def _calculate_pearson_correlation(
     
     return numerator / denominator
 
-def _aling_series_by_date(
-    dataset: list[dict[str, Any]],
-    ticker_a: str,
-    ticker_b: str,
-    field: str,
-) -> tuple[list[float], list[float]]:
-    """
-    Alinea dos series por fecha
-    """
-
-    series_a = {}
-    series_b = {}
-
-    for row in dataset:
-        ticker = row["ticker"]
-        date = row["date"]
-        value = row.get(field)
-
-        if value is None:
-            continue
-
-        if ticker == ticker_a:
-            series_a[date] = value
-
-        elif ticker == ticker_b:
-            series_b[date] = value
-    
-    common_dates = sorted(set(series_a.keys()) & set(series_b.keys()))
-
-    aling_a = []
-    aling_b = []
-
-    for date in common_dates:
-        aling_a.append(float(series_a[date]))
-        aling_b.append(float(series_b[date]))
-
-    return aling_a, aling_b
-
 def calculate_pearson_between_assets(
     dataset: list[dict[str, Any]],
     ticker_a: str,
@@ -88,7 +51,7 @@ def calculate_pearson_between_assets(
     Calcula correlación de Pearson entre dos activos
     """
 
-    x, y = _aling_series_by_date(dataset, ticker_a, ticker_b, field)
+    x, y = aling_series_by_date(dataset, ticker_a, ticker_b, field)
 
     correlation = _calculate_pearson_correlation(x, y)
 
