@@ -58,6 +58,6 @@ def calculate_pearson_between_assets(
     return {
         "asset_a": ticker_a,
         "asset_b": ticker_b,
-        "observation": len(x),
+        "observations": len(x),
         "correlation": round(correlation, 6) if correlation is not None else None,
     }

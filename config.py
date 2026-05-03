@@ -26,6 +26,8 @@ CORRELATION_PATH            = os.path.join(RESULTS_DIR,   "correlation_a_b.json"
 SIMILARITY_PATH             = os.path.join(RESULTS_DIR,   "euclidean_similarity_a_b.json")
 DTW_PATH                    = os.path.join(RESULTS_DIR,   "dtw_similarity_a_b.json")
 COSINE_SIMILARITY_PATH      = os.path.join(RESULTS_DIR,   "cosine_similarity_a_b.json")
+RISK_RANKING_PATH           = os.path.join(RESULTS_DIR,   "visual_risk_ranking.json")
+ASSET_COMPARISON_PATH       = os.path.join(RESULTS_DIR,   "visual_asset_comparison.json")
 
 # ── Parametros de descarga ────────────────────────────────────
 INTERVAL = "1d"

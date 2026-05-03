@@ -7,9 +7,15 @@ from src.analytics.returns                  import calculate_daily_returns
 from src.analytics.historical_volatility    import calculate_historical_volatility_by_ticker
 from src.analytics.risk_classification      import classify_assets_by_risk
 from src.analytics.correlation              import calculate_pearson_between_assets
-from src.analytics.similarity               import calculate_euclidean_similarity_between_assets
-from src.analytics.similarity               import calculate_dtw_similarity_between_assets
-from src.analytics.similarity               import calculate_cosine_similarity_between_assets
+from src.analytics.similarity               import (
+    calculate_euclidean_similarity_between_assets,
+    calculate_dtw_similarity_between_assets,
+    calculate_cosine_similarity_between_assets,
+)
+from src.analytics.visualization_preparer   import (
+    prepare_risk_ranking,
+    prepare_asset_comparison,
+)
 
 from config import (
     CLEAN_DATASET_PATH,
@@ -20,7 +26,9 @@ from config import (
     SIMILARITY_PATH,
     DTW_PATH,
     COSINE_SIMILARITY_PATH,
-    )
+    RISK_RANKING_PATH,
+    ASSET_COMPARISON_PATH,
+)
 
 def separator(title: str) -> None:
     print("\n" + "█" * 60)
@@ -73,6 +81,18 @@ def main() -> None:
     FileUtils.save_json(
         RISK_CLASSIFICATION_PATH,
         classified_assets,
+    )
+
+
+    separator("PASO 7.1/ — VISUALIZACIÓN DE CLASIFICACIÓN POR RIESGO")
+    classified_assets = FileUtils.load_json(RISK_CLASSIFICATION_PATH)
+    risk_ranking = prepare_risk_ranking(
+        risk_data=classified_assets,
+        volatility_field="annual_volatility",
+    )
+    FileUtils.save_json(
+        file_path=RISK_RANKING_PATH,
+        data=risk_ranking,
     )
 
     separator("PASO 8/ — SIMILITUD DE DISTANCIA EUCLIDIANA (Dos activos)")
@@ -128,6 +148,23 @@ def main() -> None:
     FileUtils.save_json(
         file_path=COSINE_SIMILARITY_PATH,
         data=cosine_similarity_result,
+    )
+
+    separator("PASO 12/ — VISUALIZACIÓN DE CALCULOS DE SIMILITUD")
+    correlation_result = FileUtils.load_json(CORRELATION_PATH)
+    similarity_result = FileUtils.load_json(SIMILARITY_PATH)
+    dtw_result = FileUtils.load_json(DTW_PATH)
+    cosine_similarity_result = FileUtils.load_json(COSINE_SIMILARITY_PATH)
+    asset_comparison = prepare_asset_comparison(
+        pearson_result=correlation_result,
+        euclidean_result=similarity_result,
+        dtw_result=dtw_result,
+        cosine_result=cosine_similarity_result,
+    )
+
+    FileUtils.save_json(
+        data=asset_comparison,
+        file_path=ASSET_COMPARISON_PATH,
     )
 
     print("\n" + "=" * 60)
