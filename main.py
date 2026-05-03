@@ -9,6 +9,7 @@ from src.analytics.risk_classification      import classify_assets_by_risk
 from src.analytics.correlation              import calculate_pearson_between_assets
 from src.analytics.similarity               import calculate_euclidean_similarity_between_assets
 from src.analytics.similarity               import calculate_dtw_similarity_between_assets
+from src.analytics.similarity               import calculate_cosine_similarity_between_assets
 
 from config import (
     CLEAN_DATASET_PATH,
@@ -18,6 +19,7 @@ from config import (
     CORRELATION_PATH,
     SIMILARITY_PATH,
     DTW_PATH,
+    COSINE_SIMILARITY_PATH,
     )
 
 def separator(title: str) -> None:
@@ -112,6 +114,20 @@ def main() -> None:
     FileUtils.save_json(
         file_path=DTW_PATH,
         data=dtw_result,
+    )
+
+    separator("PASO 11/ — SIMILITUD POR COSENO (Dos activos)")
+    ticker_a = "AAPL"
+    ticker_b = "MSFT"
+    cosine_similarity_result = calculate_cosine_similarity_between_assets(
+        dataset=dataset_with_returns,
+        ticker_a=ticker_a,
+        ticker_b=ticker_b,
+        field="daily_return",
+    )
+    FileUtils.save_json(
+        file_path=COSINE_SIMILARITY_PATH,
+        data=cosine_similarity_result,
     )
 
     print("\n" + "=" * 60)

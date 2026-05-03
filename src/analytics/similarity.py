@@ -2,7 +2,83 @@ from typing import Any
 
 from src.analytics.time_series import aling_series_by_date
 
-def calcualte_dtw_distance(
+def calculate_cosine_similarity(
+    values_a: list[float],
+    values_b: list[float],
+) -> float | None:
+    """
+    Calcular la similitud por coseno entre dos vectores.
+
+    Formula:
+        coseno = (A . B) / (||A|| * ||B||)
+
+    Interpretación:
+        1 -> misma dirección
+        0 -> sin similitud direccional
+       -1 -> dirección opuesta
+    """
+
+    if not values_a or not values_b:
+        return None
+    
+    if len(values_a) != len(values_b):
+        return None
+    
+    dot_product = 0.0
+    magnitude_a = 0.0
+    magnitude_b = 0.0
+
+    for index in range(len(values_a)):
+        value_a = values_a[index]
+        value_b = values_b[index]
+
+        dot_product += value_a * value_b
+        magnitude_a += value_a ** 2
+        magnitude_b += value_b ** 2
+
+    magnitude_a = magnitude_a ** 0.5
+    magnitude_b = magnitude_b ** 0.5
+
+    if magnitude_a == 0 or magnitude_b == 0:
+        return None
+    
+    return dot_product / (magnitude_a * magnitude_b)
+
+def calculate_cosine_similarity_between_assets(
+    dataset: list[dict[str, Any]],
+    ticker_a: str,
+    ticker_b: str,
+    field: str = "daily_return",
+) -> dict[str, Any]:
+    """
+    Calcula similitud por coseno entre dos activos usando rendimientos diarios.
+    """
+
+    values_a, values_b = aling_series_by_date(
+        dataset=dataset,
+        ticker_a=ticker_a,
+        ticker_b=ticker_b,
+        field=field,
+    )
+
+    similarity = calculate_cosine_similarity(
+        values_a=values_a,
+        values_b=values_b,
+    )
+
+    return {
+        "asset_a": ticker_a,
+        "asset_b": ticker_b,
+        "field": field,
+        "observations": len(values_a),
+        "cosine_similitary": (
+            round(similarity, 8)
+            if similarity is not None
+            else None
+        )
+    }
+
+def calculate_dtw_distance(
     values_a: list[float],
     values_b: list[float],
 ) -> float | None:
@@ -71,7 +147,7 @@ def calculate_dtw_similarity_between_assets(
         field=field,
     )
 
-    distance = calcualte_dtw_distance(
+    distance = calculate_dtw_distance(
         values_a=values_a,
         values_b=values_b,
     )
