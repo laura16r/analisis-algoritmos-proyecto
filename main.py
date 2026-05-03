@@ -7,6 +7,7 @@ from src.analytics.returns                  import calculate_daily_returns
 from src.analytics.historical_volatility    import calculate_historical_volatility_by_ticker
 from src.analytics.risk_classification      import classify_assets_by_risk
 from src.analytics.correlation              import calculate_pearson_between_assets
+from src.analytics.similarity               import calculate_euclidean_similarity_between_assets
 
 from config import (
     CLEAN_DATASET_PATH,
@@ -14,6 +15,7 @@ from config import (
     HISTORICAL_VOLATILITY_PATH,
     RISK_CLASSIFICATION_PATH,
     CORRELATION_PATH,
+    SIMILARITY_PATH
     )
 
 def separator(title: str) -> None:
@@ -80,6 +82,20 @@ def main() -> None:
     FileUtils.save_json(
         file_path=CORRELATION_PATH,
         data=correlation_result,
+    )
+
+    separator("PASO 9/ — SIMILITUD DE DISTANCIA EUCLIDIANA (Dos activos)")
+    ticker_a = "AAPL"
+    ticker_b = "MSFT"
+    similarity_result = calculate_euclidean_similarity_between_assets(
+        dataset=dataset_with_returns,
+        ticker_a=ticker_a,
+        ticker_b=ticker_b,
+        field="daily_return",
+    )
+    FileUtils.save_json(
+        file_path=SIMILARITY_PATH,
+        data=similarity_result,
     )
 
     print("\n" + "=" * 60)
