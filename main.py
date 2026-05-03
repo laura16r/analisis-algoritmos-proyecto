@@ -2,6 +2,7 @@ from src.extractors.yahoo_extractor   import run_extraction
 from src.processors.market_processor  import build_master_dataset
 from src.cleaners.market_cleaner      import clean_dataset
 from src.validators.dataset_validator import validate_dataset
+from src.analytics.returns            import calculate_daily_returns
 
 
 def separator(title: str) -> None:
@@ -11,17 +12,20 @@ def separator(title: str) -> None:
 
 
 def main() -> None:
-    separator("PASO 1/4 — EXTRACCION DE DATOS FINANCIEROS")
+    separator("PASO 1/5 — EXTRACCION DE DATOS FINANCIEROS")
     run_extraction()
 
-    separator("PASO 2/4 — CONSTRUCCION DEL DATASET MAESTRO")
+    separator("PASO 2/5 — CONSTRUCCION DEL DATASET MAESTRO")
     build_master_dataset()
 
-    separator("PASO 3/4 — LIMPIEZA Y TRANSFORMACION")
+    separator("PASO 3/5 — LIMPIEZA Y TRANSFORMACION")
     clean_dataset()
 
-    separator("PASO 4/4 — VALIDACION DEL DATASET")
+    separator("PASO 4/5 — VALIDACION DEL DATASET")
     validate_dataset()
+
+    separator("PASO 5/5 — CALCULO DE RETORNOS DIARIOS")
+    calculate_daily_returns()
 
     print("\n" + "=" * 60)
     print("  PIPELINE ETL COMPLETADO.")

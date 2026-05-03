@@ -11,14 +11,15 @@ modifica este archivo.
 import os
 
 # ── Carpetas de datos ─────────────────────────────────────────
-RAW_DIR        = "data/raw"
-PROCESSED_DIR  = "data/processed"
-RESULTS_DIR    = "data/results"
+RAW_DIR         = "data/raw"
+PROCESSED_DIR   = "data/processed"
+RESULTS_DIR     = "data/results"
 
 # ── Archivos del pipeline ─────────────────────────────────────
 MASTER_DATASET_PATH = os.path.join(PROCESSED_DIR, "master_dataset.json")
 CLEAN_DATASET_PATH  = os.path.join(RESULTS_DIR,   "clean_dataset.json")
 VALIDATION_LOG_PATH = os.path.join(RESULTS_DIR,   "validation_report.json")
+DAILY_RETURNS_PATH  = os.path.join(RESULTS_DIR,   "daily_returns_dataset.json")
 
 # ── Parametros de descarga ────────────────────────────────────
 INTERVAL = "1d"
