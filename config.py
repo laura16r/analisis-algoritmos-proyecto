@@ -24,6 +24,7 @@ HISTORICAL_VOLATILITY_PATH  = os.path.join(RESULTS_DIR,   "historical_volatility
 RISK_CLASSIFICATION_PATH    = os.path.join(RESULTS_DIR,   "risk_classification.json")
 CORRELATION_PATH            = os.path.join(RESULTS_DIR,   "correlation_a_b.json")
 SIMILARITY_PATH             = os.path.join(RESULTS_DIR,   "euclidean_similarity_a_b.json")
+DTW_PATH                    = os.path.join(RESULTS_DIR,   "dtw_similarity_a_b.json")
 
 # ── Parametros de descarga ────────────────────────────────────
 INTERVAL = "1d"
