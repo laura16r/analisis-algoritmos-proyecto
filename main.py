@@ -4,14 +4,16 @@ from src.cleaners.market_cleaner            import clean_dataset
 from src.validators.dataset_validator       import validate_dataset
 from src.utils.io                           import FileUtils
 from src.analytics.returns                  import calculate_daily_returns
-from src.statistics.historical_volatility   import calculate_historical_volatility_by_ticker
-from src.statistics.risk_classification     import classify_assets_by_risk
+from src.analytics.historical_volatility    import calculate_historical_volatility_by_ticker
+from src.analytics.risk_classification      import classify_assets_by_risk
+from src.analytics.correlation              import calculate_pearson_between_assets
 
 from config import (
     CLEAN_DATASET_PATH,
     DAILY_RETURNS_PATH,
     HISTORICAL_VOLATILITY_PATH,
     RISK_CLASSIFICATION_PATH,
+    CORRELATION_PATH,
     )
 
 def separator(title: str) -> None:
@@ -40,8 +42,8 @@ def main() -> None:
         price_field="close"
     )
     FileUtils.save_json(
-        DAILY_RETURNS_PATH,
-        dataset_with_returns,
+        file_path=DAILY_RETURNS_PATH,
+        data=dataset_with_returns,
     )
 
     separator("PASO 6/ — CALCULAR VOLATILIDAD HISTÓRICA")
@@ -52,8 +54,8 @@ def main() -> None:
         annualize=True,
     )
     FileUtils.save_json(
-        HISTORICAL_VOLATILITY_PATH,
-        historical_volatility,
+        file_path=HISTORICAL_VOLATILITY_PATH,
+        data=historical_volatility,
     )
 
     separator("PASO 7/ — CLASIFICAR ACTIVOS POR RIESGO")
@@ -65,6 +67,19 @@ def main() -> None:
     FileUtils.save_json(
         RISK_CLASSIFICATION_PATH,
         classified_assets,
+    )
+
+    separator("PASO 8/ — CORRELACIÓN DE PEARSON (Dos activos)")
+    ticker_a = "AAPL"
+    ticker_b = "MSFT"
+    correlation_result = calculate_pearson_between_assets(
+        dataset=dataset_with_returns,
+        ticker_a=ticker_a,
+        ticker_b=ticker_b,
+    )
+    FileUtils.save_json(
+        file_path=CORRELATION_PATH,
+        data=correlation_result,
     )
 
     print("\n" + "=" * 60)

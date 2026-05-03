@@ -22,6 +22,7 @@ VALIDATION_LOG_PATH         = os.path.join(RESULTS_DIR,   "validation_report.jso
 DAILY_RETURNS_PATH          = os.path.join(RESULTS_DIR,   "daily_returns_dataset.json")
 HISTORICAL_VOLATILITY_PATH  = os.path.join(RESULTS_DIR,   "historical_volatility.json")
 RISK_CLASSIFICATION_PATH    = os.path.join(RESULTS_DIR,   "risk_classification.json")
+CORRELATION_PATH            = os.path.join(RESULTS_DIR,   "correlation_a_b.json")
 
 # ── Parametros de descarga ────────────────────────────────────
 INTERVAL = "1d"
