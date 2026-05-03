@@ -5,6 +5,7 @@ from config import CLEAN_DATASET_PATH, DAILY_RETURNS_PATH
 from src.utils.io import FileUtils 
 
 def calculate_daily_returns(
+    dataset: list[dict[str, Any]],
     price_field: str = "close",
 ) -> list[dict[str, Any]]:
     """
@@ -20,13 +21,6 @@ def calculate_daily_returns(
     Returns:
         Nuevo dataset con el campo "daily_return".
     """
-
-    try:
-        dataset = FileUtils.load_json(CLEAN_DATASET_PATH)
-    except FileNotFoundError:
-        print(f"  [ERROR] No se encontro {CLEAN_DATASET_PATH}.")
-        print("  Ejecuta primero clean_dataset().")
-        return []
 
     grouped_by_ticker: dict[str, list[dict[str, Any]]] = {}
 
