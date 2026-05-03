@@ -15,7 +15,7 @@ from typing import Any
 import requests
 
 from config import ASSETS, INTERVAL, RANGE, RAW_DIR
-from src.utils.io import save_json
+from src.utils.io import FileUtils
 
 
 HEADERS = {
@@ -118,7 +118,12 @@ def parse_yahoo_response(data: dict[str, Any], ticker: str) -> list[dict[str, An
 def save_raw_json(ticker: str, rows: list[dict[str, Any]]) -> None:
     file_name = ticker.replace(".", "_")
     path      = f"{RAW_DIR}/{file_name}.json"
-    save_json(path, rows)
+    
+    FileUtils.save_json(
+        data=rows,
+        file_path=path
+    )
+
     print(f"  [OK] {ticker}: {len(rows)} registros guardados en {path}")
 
 

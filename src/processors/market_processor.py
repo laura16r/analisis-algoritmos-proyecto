@@ -9,7 +9,7 @@ import os
 from typing import Any
 
 from config import RAW_DIR, MASTER_DATASET_PATH
-from src.utils.io import load_json, save_json
+from src.utils.io import FileUtils 
 
 
 def build_master_dataset() -> list[dict[str, Any]]:
@@ -38,7 +38,7 @@ def build_master_dataset() -> list[dict[str, Any]]:
         path   = os.path.join(RAW_DIR, file_name)
 
         try:
-            rows = load_json(path)
+            rows = FileUtils.load_json(path)
         except Exception as e:
             print(f"  [ERROR] {ticker}: no se pudo leer el archivo — {e}")
             continue
@@ -58,7 +58,7 @@ def build_master_dataset() -> list[dict[str, Any]]:
         )
     )
 
-    save_json(MASTER_DATASET_PATH, master_dataset)
+    FileUtils.save_json(MASTER_DATASET_PATH, master_dataset)
 
     print(f"\n  [OK] Dataset maestro: {MASTER_DATASET_PATH}")
     print(f"  [OK] Total registros : {len(master_dataset)}")

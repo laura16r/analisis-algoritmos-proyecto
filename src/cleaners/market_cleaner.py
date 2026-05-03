@@ -11,7 +11,7 @@ Limpia el dataset maestro ticker por ticker:
 from typing import Any
 
 from config import MASTER_DATASET_PATH, CLEAN_DATASET_PATH
-from src.utils.io import load_json, save_json
+from src.utils.io import FileUtils
 
 
 def convert_types(row: dict[str, Any]) -> dict[str, Any] | None:
@@ -139,7 +139,7 @@ def clean_dataset() -> list[dict[str, Any]]:
     print("=" * 55)
 
     try:
-        raw_rows = load_json(MASTER_DATASET_PATH)
+        raw_rows = FileUtils.load_json(MASTER_DATASET_PATH)
     except FileNotFoundError:
         print(f"  [ERROR] No se encontro {MASTER_DATASET_PATH}.")
         print("  Ejecuta primero build_master_dataset().")
@@ -176,7 +176,7 @@ def clean_dataset() -> list[dict[str, Any]]:
 
     final_rows.sort(key=lambda r: (r["date"], r["close"]))
 
-    save_json(CLEAN_DATASET_PATH, final_rows)
+    FileUtils.save_json(CLEAN_DATASET_PATH, final_rows)
 
     print("=" * 55)
     print("  RESUMEN POR ACTIVO")

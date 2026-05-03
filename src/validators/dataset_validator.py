@@ -13,7 +13,7 @@ import datetime
 from typing import Any
 
 from config import CLEAN_DATASET_PATH, VALIDATION_LOG_PATH, MIN_RECORDS_PER_ASSET
-from src.utils.io import load_json, save_json
+from src.utils.io import FileUtils
 
 
 # Maximo de dias naturales entre dos registros consecutivos considerado normal.
@@ -108,7 +108,7 @@ def validate_dataset() -> list[dict[str, Any]]:
     print("=" * 55)
 
     try:
-        rows = load_json(CLEAN_DATASET_PATH)
+        rows = FileUtils.load_json(CLEAN_DATASET_PATH)
     except FileNotFoundError:
         print(f"  [ERROR] No se encontro {CLEAN_DATASET_PATH}.")
         print("  Ejecuta primero clean_dataset().")
@@ -135,7 +135,7 @@ def validate_dataset() -> list[dict[str, Any]]:
             for issue in report["issues"]:
                 print(f"               → {issue}")
 
-    save_json(VALIDATION_LOG_PATH, reports)
+    FileUtils.save_json(VALIDATION_LOG_PATH, reports)
 
     print("\n" + "=" * 55)
     print(f"  Activos OK         : {ok_count}")
