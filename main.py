@@ -17,6 +17,9 @@ from src.analytics.visualization_preparer   import (
     prepare_asset_comparison,
 )
 from src.patterns.sliding_window            import run_pattern_detection
+from src.dashboard.heatmap                  import plot_heatmap
+from src.dashboard.candlestick              import plot_candlestick
+from src.dashboard.report                   import generate_pdf_report
 
 from config import (
     CLEAN_DATASET_PATH,
@@ -31,7 +34,13 @@ from config import (
     ASSET_COMPARISON_PATH,
     PATTERNS_PATH,
     ASSETS,
+    CHARTS_DIR,
+    HEATMAP_PATH,
+    REPORT_PDF_PATH,
 )
+
+import os
+
 
 def separator(title: str) -> None:
     print("\n" + "█" * 60)
@@ -41,10 +50,10 @@ def separator(title: str) -> None:
 
 def main() -> None:
     separator("PASO 1/ — EXTRACCION DE DATOS FINANCIEROS")
-    run_extraction()
+    #run_extraction()
 
     separator("PASO 2/ — CONSTRUCCION DEL DATASET MAESTRO")
-    build_master_dataset()
+    #build_master_dataset()
 
     separator("PASO 3/ — LIMPIEZA Y TRANSFORMACION")
     clean_dataset()
@@ -147,9 +156,9 @@ def main() -> None:
     )
 
     separator("PASO 12/ — VISUALIZACION DE CALCULOS DE SIMILITUD")
-    correlation_result    = FileUtils.load_json(CORRELATION_PATH)
-    similarity_result     = FileUtils.load_json(SIMILARITY_PATH)
-    dtw_result            = FileUtils.load_json(DTW_PATH)
+    correlation_result       = FileUtils.load_json(CORRELATION_PATH)
+    similarity_result        = FileUtils.load_json(SIMILARITY_PATH)
+    dtw_result               = FileUtils.load_json(DTW_PATH)
     cosine_similarity_result = FileUtils.load_json(COSINE_SIMILARITY_PATH)
     asset_comparison = prepare_asset_comparison(
         pearson_result=correlation_result,
@@ -176,9 +185,47 @@ def main() -> None:
         data=patterns_result,
     )
 
+    separator("PASO 14/ — HEATMAP DE CORRELACION")
+    dataset_with_returns = FileUtils.load_json(DAILY_RETURNS_PATH)
+    plot_heatmap(
+        dataset=dataset_with_returns,
+        output_path=HEATMAP_PATH,
+    )
+
+    separator("PASO 15/ — CANDLESTICK CON MEDIAS MOVILES")
+    clean_data = FileUtils.load_json(CLEAN_DATASET_PATH)
+    candlestick_tickers = ["AAPL", "VOO", "EC"]
+    candlestick_paths   = []
+
+    for ticker in candlestick_tickers:
+        path = os.path.join(CHARTS_DIR, f"candlestick_{ticker}.png")
+        plot_candlestick(
+            dataset=clean_data,
+            ticker=ticker,
+            output_path=path,
+            last_n_days=180,
+            ma_windows=[20, 50],
+        )
+        candlestick_paths.append(path)
+
+    separator("PASO 16/ — GENERACION DE REPORTE PDF")
+    volatility_data = FileUtils.load_json(RISK_CLASSIFICATION_PATH)
+    comparison_data = FileUtils.load_json(ASSET_COMPARISON_PATH)
+    patterns_data   = FileUtils.load_json(PATTERNS_PATH)
+
+    generate_pdf_report(
+        volatility_data=volatility_data,
+        comparison_data=comparison_data,
+        patterns_data=patterns_data,
+        heatmap_path=HEATMAP_PATH,
+        candlestick_paths=candlestick_paths,
+        output_path=REPORT_PDF_PATH,
+    )
+
     print("\n" + "=" * 60)
     print("  PIPELINE COMPLETADO.")
     print("  Resultados en: data/results/")
+    print(f"  Reporte PDF:   {REPORT_PDF_PATH}")
     print("=" * 60)
 
 
