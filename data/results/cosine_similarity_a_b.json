@@ -1,0 +1,7 @@
+{
+    "asset_a": "AAPL",
+    "asset_b": "MSFT",
+    "field": "daily_return",
+    "observations": 1255,
+    "cosine_similitary": 0.5911849
+}

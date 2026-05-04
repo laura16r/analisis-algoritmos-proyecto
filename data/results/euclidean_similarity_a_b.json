@@ -1,0 +1,7 @@
+{
+    "asset_a": "AAPL",
+    "asset_b": "MSFT",
+    "field": "daily_return",
+    "observation": 1255,
+    "euclidean_distance": 0.54479469
+}

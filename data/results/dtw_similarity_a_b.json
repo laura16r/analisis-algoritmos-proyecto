@@ -1,0 +1,8 @@
+{
+    "asset_a": "AAPL",
+    "asset_b": "MSFT",
+    "field": "daily_return",
+    "observation_a": 1255,
+    "observation_b": 1255,
+    "dtw_distance": 10.31011307
+}
