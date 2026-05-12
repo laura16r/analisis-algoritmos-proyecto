@@ -1,0 +1,26 @@
+# Entorno virtual local (no se necesita en Docker)
+.venv/
+venv/
+env/
+
+# Cache de Python
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Git
+.git/
+.gitignore
+
+# Herramientas de desarrollo
+.vscode/
+.idea/
+*.egg-info/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Variables de entorno locales
+.env
+*.env

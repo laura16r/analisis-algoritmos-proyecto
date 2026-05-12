@@ -12,10 +12,14 @@ Para deploy en Streamlit Cloud:
 
 import os
 import sys
+import io
+import traceback
+from contextlib import redirect_stdout
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import streamlit as st
+from main import main as run_main_pipeline
 
 from config import (
     RISK_CLASSIFICATION_PATH,
@@ -71,6 +75,17 @@ def check_data(data, path: str) -> bool:
     return True
 
 
+def execute_main_pipeline():
+    output = io.StringIO()
+    try:
+        with redirect_stdout(output):
+            run_main_pipeline()
+        st.cache_data.clear()
+        return True, output.getvalue()
+    except Exception:
+        return False, output.getvalue() + "\n" + traceback.format_exc()
+
+
 # ─────────────────────────────────────────────────────────────
 # Navegacion
 # ─────────────────────────────────────────────────────────────
@@ -83,6 +98,7 @@ seccion = st.sidebar.radio(
         "🔗 Similitud entre Activos",
         "🔍 Deteccion de Patrones",
         "🖼️ Visualizaciones",
+        "⚙️ Ejecutar Pipeline",
     ],
 )
 
@@ -290,3 +306,31 @@ elif seccion == "🖼️ Visualizaciones":
                         ma_windows=[20, 50],
                     )
                 st.image(tmp_path, use_container_width=True)
+
+
+# ─────────────────────────────────────────────────────────────
+# Ejecutar Pipeline
+# ─────────────────────────────────────────────────────────────
+
+elif seccion == "⚙️ Ejecutar Pipeline":
+    st.subheader("⚙️ Ejecutar Pipeline de Analisis")
+    st.markdown("""
+    Desde esta seccion puedes invocar el archivo `main.py` para regenerar
+    los archivos de resultados que usa el dashboard.
+    """)
+
+    st.warning(
+        "Este proceso puede tardar y sobrescribira los archivos generados en `data/results/`."
+    )
+
+    if st.button("Ejecutar main.py", type="primary"):
+        with st.spinner("Ejecutando pipeline completo..."):
+            success, output = execute_main_pipeline()
+
+        if success:
+            st.success("Pipeline completado correctamente.")
+        else:
+            st.error("El pipeline fallo durante la ejecucion.")
+
+        with st.expander("Ver salida de main.py", expanded=not success):
+            st.code(output or "main.py no produjo salida en consola.", language="text")

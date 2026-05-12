@@ -50,10 +50,10 @@ def separator(title: str) -> None:
 
 def main() -> None:
     separator("PASO 1/ — EXTRACCION DE DATOS FINANCIEROS")
-    #run_extraction()
+    run_extraction()
 
     separator("PASO 2/ — CONSTRUCCION DEL DATASET MAESTRO")
-    #build_master_dataset()
+    build_master_dataset()
 
     separator("PASO 3/ — LIMPIEZA Y TRANSFORMACION")
     clean_dataset()
