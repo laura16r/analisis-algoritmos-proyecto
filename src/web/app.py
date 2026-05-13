@@ -28,6 +28,7 @@ from config import (
     CHARTS_DIR,
     CLEAN_DATASET_PATH,
     DAILY_RETURNS_PATH,
+    REPORT_PDF_PATH,
     ASSETS,
 )
 from src.utils.io import FileUtils
@@ -84,6 +85,21 @@ def execute_main_pipeline():
         return True, output.getvalue()
     except Exception:
         return False, output.getvalue() + "\n" + traceback.format_exc()
+
+
+def show_pdf_download_button():
+    if not os.path.exists(REPORT_PDF_PATH):
+        st.info("El reporte PDF aun no existe. Ejecuta primero el pipeline.")
+        return
+
+    with open(REPORT_PDF_PATH, "rb") as pdf_file:
+        st.download_button(
+            label="Descargar reporte tecnico PDF",
+            data=pdf_file,
+            file_name=os.path.basename(REPORT_PDF_PATH),
+            mime="application/pdf",
+            type="primary",
+        )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -277,7 +293,7 @@ elif seccion == "🔍 Deteccion de Patrones":
 elif seccion == "🖼️ Visualizaciones":
     st.subheader("🖼️ Visualizaciones")
 
-    tab1, tab2 = st.tabs(["Heatmap de Correlacion", "Candlestick + Medias Moviles"])
+    tab1, tab2, tab3 = st.tabs(["Heatmap de Correlacion", "Candlestick + Medias Moviles", "Reporte PDF"])
 
     with tab1:
         st.markdown("**Matriz de Correlacion de Pearson** entre todos los activos (retornos diarios)")
@@ -307,6 +323,10 @@ elif seccion == "🖼️ Visualizaciones":
                     )
                 st.image(tmp_path, use_container_width=True)
 
+    with tab3:
+        st.markdown("**Reporte tecnico generado por `main.py`**")
+        show_pdf_download_button()
+
 
 # ─────────────────────────────────────────────────────────────
 # Ejecutar Pipeline
@@ -329,6 +349,7 @@ elif seccion == "⚙️ Ejecutar Pipeline":
 
         if success:
             st.success("Pipeline completado correctamente.")
+            show_pdf_download_button()
         else:
             st.error("El pipeline fallo durante la ejecucion.")
 
