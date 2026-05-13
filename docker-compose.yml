@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    container_name: analisis-algoritmos
+    ports:
+      - "8501:8501"
+    volumes:
+      # Persiste los datos generados por el pipeline fuera del contenedor
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

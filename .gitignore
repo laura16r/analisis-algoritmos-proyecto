@@ -196,3 +196,5 @@ pyrightconfig.json
 
 # Files json
 *.json
+*.pdf
+*.png

@@ -181,7 +181,7 @@ def calculate_euclidean_distance(
     squared_sum = 0.0
 
     for index in range(len(values_a)):
-        difference = values_a[index] = values_b[index]
+        difference = values_a[index] - values_b[index]
         squared_sum += difference ** 2
 
     return  squared_sum ** 0.5

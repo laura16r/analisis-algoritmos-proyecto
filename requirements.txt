@@ -1,0 +1,4 @@
+requests
+matplotlib
+reportlab
+streamlit

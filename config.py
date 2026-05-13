@@ -27,6 +27,12 @@ SIMILARITY_PATH             = os.path.join(RESULTS_DIR,   "euclidean_similarity_
 DTW_PATH                    = os.path.join(RESULTS_DIR,   "dtw_similarity_a_b.json")
 COSINE_SIMILARITY_PATH      = os.path.join(RESULTS_DIR,   "cosine_similarity_a_b.json")
 RISK_RANKING_PATH           = os.path.join(RESULTS_DIR,   "visual_risk_ranking.json")
+PATTERNS_PATH               = os.path.join(RESULTS_DIR,   "patterns_detection.json")
+
+# -- Imagenes y reporte PDF -------------------------------------------
+CHARTS_DIR          = "data/results/charts"
+HEATMAP_PATH        = "data/results/charts/heatmap_correlation.png"
+REPORT_PDF_PATH     = "data/results/reporte_tecnico.pdf"
 ASSET_COMPARISON_PATH       = os.path.join(RESULTS_DIR,   "visual_asset_comparison.json")
 
 # ── Parametros de descarga ────────────────────────────────────
