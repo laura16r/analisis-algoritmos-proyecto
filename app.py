@@ -28,6 +28,11 @@ from config import (
     CHARTS_DIR,
     CLEAN_DATASET_PATH,
     DAILY_RETURNS_PATH,
+    CORRELATION_PATH,
+    SIMILARITY_PATH,
+    DTW_PATH,
+    COSINE_SIMILARITY_PATH,
+    ASSET_COMPARISON_PATH,
     REPORT_PDF_PATH,
     ASSETS,
 )
@@ -40,6 +45,7 @@ from src.analytics.similarity import (
 )
 from src.analytics.visualization_preparer import prepare_asset_comparison
 from src.dashboard.candlestick import plot_candlestick
+from src.dashboard.report import generate_pdf_report
 
 
 # ─────────────────────────────────────────────────────────────
@@ -87,19 +93,99 @@ def execute_main_pipeline():
         return False, output.getvalue() + "\n" + traceback.format_exc()
 
 
+def save_similarity_results(pearson, euclidean, dtw, cosine, comparison):
+    FileUtils.save_json(CORRELATION_PATH, pearson)
+    FileUtils.save_json(SIMILARITY_PATH, euclidean)
+    FileUtils.save_json(DTW_PATH, dtw)
+    FileUtils.save_json(COSINE_SIMILARITY_PATH, cosine)
+    FileUtils.save_json(ASSET_COMPARISON_PATH, comparison)
+    if os.path.exists(REPORT_PDF_PATH):
+        os.remove(REPORT_PDF_PATH)
+    st.session_state.pop("generated_pdf_key", None)
+    st.cache_data.clear()
+
+
+def filter_assets_data(data, tickers: set[str]):
+    return [row for row in data if row.get("ticker") in tickers]
+
+
+def generate_pdf_from_latest_similarity():
+    comparison = FileUtils.load_json(ASSET_COMPARISON_PATH)
+    tickers = {comparison.get("asset_a"), comparison.get("asset_b")}
+    tickers.discard(None)
+
+    volatility_data = filter_assets_data(FileUtils.load_json(RISK_CLASSIFICATION_PATH), tickers)
+    patterns_data = filter_assets_data(FileUtils.load_json(PATTERNS_PATH), tickers)
+
+    candlestick_paths = []
+    try:
+        clean_data = FileUtils.load_json(CLEAN_DATASET_PATH)
+        os.makedirs(CHARTS_DIR, exist_ok=True)
+        for ticker in tickers:
+            path = os.path.join(CHARTS_DIR, f"candlestick_{ticker}_reporte.png")
+            plot_candlestick(
+                dataset=clean_data,
+                ticker=ticker,
+                output_path=path,
+                last_n_days=180,
+                ma_windows=[20, 50],
+            )
+            candlestick_paths.append(path)
+    except FileNotFoundError:
+        candlestick_paths = []
+
+    return generate_pdf_report(
+        volatility_data=volatility_data,
+        comparison_data=comparison,
+        patterns_data=patterns_data,
+        heatmap_path=HEATMAP_PATH,
+        candlestick_paths=candlestick_paths,
+        output_path=REPORT_PDF_PATH,
+    )
+
+
+def similarity_report_key(comparison):
+    metrics = comparison.get("metrics", {})
+    return "|".join([
+        str(comparison.get("asset_a")),
+        str(comparison.get("asset_b")),
+        str(comparison.get("observations")),
+        str(metrics.get("pearson_correlation")),
+        str(metrics.get("euclidean_distance")),
+        str(metrics.get("dtw_distance")),
+        str(metrics.get("cosine_similarity")),
+    ])
+
+
 def show_pdf_download_button():
-    if not os.path.exists(REPORT_PDF_PATH):
-        st.info("El reporte PDF aun no existe. Ejecuta primero el pipeline.")
+    if not os.path.exists(ASSET_COMPARISON_PATH):
+        st.info("Calcula primero la similitud entre dos activos para generar el reporte.")
         return
 
-    with open(REPORT_PDF_PATH, "rb") as pdf_file:
-        st.download_button(
-            label="Descargar reporte tecnico PDF",
-            data=pdf_file,
-            file_name=os.path.basename(REPORT_PDF_PATH),
-            mime="application/pdf",
-            type="primary",
-        )
+    comparison = FileUtils.load_json(ASSET_COMPARISON_PATH)
+    report_key = similarity_report_key(comparison)
+    st.caption(
+        f"Ultima comparacion guardada: {comparison.get('asset_a', 'N/A')} vs {comparison.get('asset_b', 'N/A')}"
+    )
+
+    if st.button("Generar PDF con ultima comparacion", type="primary"):
+        try:
+            with st.spinner("Generando reporte PDF..."):
+                generate_pdf_from_latest_similarity()
+            st.session_state["generated_pdf_key"] = report_key
+            st.success("Reporte PDF generado con la ultima comparacion de activos.")
+        except FileNotFoundError as error:
+            st.error(f"No se pudo generar el PDF. Falta el archivo: `{error.filename}`")
+            return
+
+    if os.path.exists(REPORT_PDF_PATH) and st.session_state.get("generated_pdf_key") == report_key:
+        with open(REPORT_PDF_PATH, "rb") as pdf_file:
+            st.download_button(
+                label="Descargar reporte tecnico PDF",
+                data=pdf_file,
+                file_name=os.path.basename(REPORT_PDF_PATH),
+                mime="application/pdf",
+            )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -224,8 +310,9 @@ elif seccion == "🔗 Similitud entre Activos":
                 dtw       = calculate_dtw_similarity_between_assets(dataset, ticker_a, ticker_b, field="daily_return")
                 cosine    = calculate_cosine_similarity_between_assets(dataset, ticker_a, ticker_b, field="daily_return")
                 comparison = prepare_asset_comparison(pearson, euclidean, dtw, cosine)
+                save_similarity_results(pearson, euclidean, dtw, cosine, comparison)
 
-            st.success(f"**{ticker_a}** vs **{ticker_b}** — {pearson['observations']} observaciones alineadas")
+            st.success(f"**{ticker_a}** vs **{ticker_b}** — {pearson['observations']} observaciones alineadas. JSON guardados en `data/results/`.")
             st.divider()
 
             metrics = comparison["metrics"]
@@ -239,6 +326,10 @@ elif seccion == "🔗 Similitud entre Activos":
             st.markdown("**Interpretacion de los resultados**")
             for key, desc in comparison["interpretation_reference"].items():
                 st.markdown(f"- **{key}**: {desc}")
+
+    st.divider()
+    st.markdown("**Reporte PDF de la ultima comparacion calculada**")
+    show_pdf_download_button()
 
 
 # ─────────────────────────────────────────────────────────────
